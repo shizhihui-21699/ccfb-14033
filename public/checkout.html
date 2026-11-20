@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>示例网店 · 安全结算</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --line:#e3e6ea; --fg:#1c1e21; --muted:#6b7280; --accent:#2563eb; --ok:#16a34a; --bad:#dc2626; --warn:#d97706; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--fg); }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 64px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  h1 { grid-column:1/-1; font-size:20px; margin:8px 0 0; }
+  .sub { grid-column:1/-1; color:var(--muted); margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  label { display:block; margin:10px 0 4px; color:var(--muted); font-size:13px; }
+  input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; }
+  .row { display:flex; gap:12px; } .row > div { flex:1; }
+  button { margin-top:16px; padding:10px 18px; border:0; border-radius:6px; background:var(--accent); color:#fff; font-size:14px; cursor:pointer; }
+  button.ghost { background:#e5e7eb; color:var(--fg); }
+  #order-result { margin-top:10px; color:var(--ok); font-weight:600; }
+  .attack-bar { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; }
+  .attack-bar a { padding:5px 12px; border:1px solid var(--line); border-radius:20px; text-decoration:none; color:var(--fg); background:#fff; }
+  .attack-bar a.on { background:var(--bad); color:#fff; border-color:var(--bad); }
+  .attack-bar a.ok { background:var(--ok); color:#fff; border-color:var(--ok); }
+  #shield-log { height:300px; overflow:auto; font:12px/1.5 ui-monospace,Menlo,monospace; background:#0f172a; color:#cbd5e1; border-radius:8px; padding:10px 12px; }
+  #shield-log .block,.quarantine { color:#f87171; } #shield-log .tamper,#shield-log .lockdown { color:#fbbf24; }
+  #shield-log .mark { color:#fb923c; } #shield-log .ready,#shield-log .allow { color:#4ade80; }
+  #script-list { font-size:12.5px; border-collapse:collapse; width:100%; }
+  #script-list td { padding:4px 6px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-all; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; background:#e5e7eb; }
+  .pill.bad { background:#fee2e2; color:var(--bad); } .pill.warn { background:#fef3c7; color:var(--warn); } .pill.ok { background:#dcfce7; color:var(--ok); }
+  #uid-bar { font-size:12.5px; color:var(--muted); }
+  #uid-bar a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛒 示例网店 · 结算页</h1>
+  <p class="sub">本页加载了统计 / 客服 / 广告等第三方脚本，并由 <code>monitor.js</code> 运行时防护全程盯守。打开终端可看到商店服务器与"攻击者服务器"两侧日志。</p>
+
+  <div class="attack-bar">
+    <strong>攻击样本：</strong>
+    <a href="?">无攻击</a>
+    <a href="?attack=basic">① 键盘记录型</a>
+    <a href="?attack=delayed">② 延迟+部分用户型</a>
+    <a href="?attack=stealth">③ 反防护+字体隐写型</a>
+    <span id="uid-bar"></span>
+  </div>
+
+  <div class="card">
+    <h2>支付信息</h2>
+    <form id="pay-form" action="/api/checkout" method="post">
+      <label>卡号</label>
+      <input id="card-number" name="card" inputmode="numeric" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+      <label>持卡人姓名</label>
+      <input id="card-name" name="name" placeholder="ZHANG SAN" autocomplete="cc-name">
+      <div class="row">
+        <div><label>有效期</label><input id="card-expiry" name="expiry" placeholder="12/28" autocomplete="cc-exp"></div>
+        <div><label>CVV</label><input id="card-cvv" name="cvv" inputmode="numeric" placeholder="123" autocomplete="cc-csc"></div>
+      </div>
+      <button type="submit">支付 ¥ 899.00</button>
+      <button type="button" class="ghost" id="fill-test">填入测试卡号</button>
+      <div id="order-result"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>🛡️ 防护探针 · 第三方脚本清单</h2>
+    <table id="script-list"><tbody></tbody></table>
+  </div>
+
+  <div class="card" style="grid-column:1/-1">
+    <h2>🛡️ 防护探针 · 实时事件</h2>
+    <div id="shield-log"></div>
+  </div>
+</div>
+
+<!-- 1. 防护配置（第一方内联，必须先于探针） -->
+<script>
+  window.__SHIELD_CONFIG__ = {
+    sensitiveSelectors: ['#card-number', '#card-name', '#card-expiry', '#card-cvv'],
+    thirdPartyPaths: ['/vendor/'],
+    allowedOrigins: [location.origin]
+  };
+</script>
+<!-- 2. 防护探针：必须先于一切第三方脚本加载 -->
+<script src="/monitor.js"></script>
+
+<!-- 3. 正常第三方脚本（统计 / 客服 / 广告） -->
+<script src="/vendor/analytics.js"></script>
+<script src="/vendor/chat-widget.js"></script>
+<script src="/vendor/ads.js"></script>
+
+<!-- 4. 按 URL 参数加载"被篡改"的第三方脚本样本 -->
+<script>
+  (function () {
+    var a = new URLSearchParams(location.search).get('attack');
+    var map = {
+      basic: '/vendor/tampered/promo-countdown.js',
+      delayed: '/vendor/tampered/survey-widget.js',
+      stealth: '/vendor/tampered/font-loader.js'
+    };
+    document.querySelectorAll('.attack-bar a').forEach(function (el) {
+      var on = el.search.includes('attack=' + a) || (!a && el.getAttribute('href') === '?');
+      if (on) el.classList.add(a ? 'on' : 'ok');
+    });
+    if (map[a]) {
+      var s = document.createElement('script');
+      s.src = map[a];
+      document.body.appendChild(s);
+    }
+  })();
+</script>
+
+<!-- 5. 第一方业务代码 -->
+<script src="/app.js"></script>
+</body>
+</html>

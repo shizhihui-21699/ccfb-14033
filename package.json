@@ -1,0 +1,27 @@
+{
+  "name": "checkout-shield-demo",
+  "version": "1.0.0",
+  "description": "结算页第三方脚本运行时防护（防网页盗刷）演示",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node server/start.js",
+    "start": "node server/start.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shizhihui-21699/ccfb-14033.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/shizhihui-21699/ccfb-14033/issues"
+  },
+  "homepage": "https://github.com/shizhihui-21699/ccfb-14033#readme",
+  "devDependencies": {
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2"
+  }
+}
