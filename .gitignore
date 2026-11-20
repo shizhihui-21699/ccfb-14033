@@ -1,3 +1,10 @@
+node_modules/
+dist/
+dist-tsc/
+*.log
+.DS_Store
+src/app/integrity.generated.ts
+
 .env
 .env.*
 !.env.example
@@ -12,7 +19,6 @@ secrets.*
 credentials*.json
 .npmrc
 .pypirc
-node_modules/
 __pycache__/
 .venv/
 venv/

@@ -1,0 +1,24 @@
+{
+  "name": "payguard-runtime-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "页面运行时第三方脚本防护（PayGuard）+ 示例结算页 + 被篡改脚本样本",
+  "type": "module",
+  "scripts": {
+    "build:guard": "node scripts/build-guard.mjs",
+    "dev": "npm run build:guard && vite",
+    "build": "npm run build:guard && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

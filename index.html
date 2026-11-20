@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayGuard 运行时防护 · 结算页演示</title>
+    <link rel="stylesheet" href="/src/app/styles.css" />
+    <!--
+      PayGuard 必须是页面第一个脚本：在任何第三方代码之前安装全部钩子。
+      配置内联在页面里，避免再发一次请求。
+    -->
+    <script src="/guard/guard-bundle.js" defer></script>
+    <script>
+      // 演示用策略（真实环境由服务端按租户下发）
+      window.__PAYGUARD_CONFIG__ = {
+        reportEndpoint: '/payguard/events',
+        blockOnTaint: true,
+        heartbeatMs: 5000,
+        debug: true,
+        sensitiveFields: [
+          { match: ['card', 'cc-number', '卡号', 'bank-card', 'pan'], dataClass: 'payment', label: '银行卡号' },
+          { match: ['cvv', 'cvc', 'security-code', '安全码'], dataClass: 'payment', label: 'CVV' },
+          { match: ['exp', 'valid', '有效期'], dataClass: 'payment', label: '有效期' },
+          { match: ['name', '姓名', 'cardholder'], dataClass: 'contact', label: '持卡人姓名' },
+          { match: ['email', '邮箱', 'mail'], dataClass: 'contact', label: '邮箱' },
+          { match: ['phone', '手机', 'tel'], dataClass: 'contact', label: '手机号' },
+          { match: ['address', '地址'], dataClass: 'contact', label: '账单地址' }
+        ],
+        services: [
+          { id: 'self', origins: [location.origin], trust: 'trusted', dataAllowlist: ['payment', 'contact', 'usage'], pathAllowlist: ['/api/checkout', '/payguard/'], label: '本站结算接口' },
+          { id: 'analytics', origins: ['/vendor/analytics', 'metrics.example.com'], trust: 'observed', dataAllowlist: ['usage'], channels: ['fetch', 'xhr', 'beacon', 'image'], label: '流量统计' },
+          { id: 'chat', origins: ['/vendor/chat', 'chat.example.com'], trust: 'observed', dataAllowlist: ['contact', 'usage'], channels: ['fetch', 'xhr', 'websocket'], label: '在线客服' },
+          { id: 'ads', origins: ['/vendor/ads', 'ads.example.com'], trust: 'observed', dataAllowlist: ['usage'], channels: ['image', 'fetch', 'xhr'], label: '广告转化' },
+          { id: 'abtest', origins: ['/vendor/abtest', 'featureflags.example.com'], trust: 'observed', dataAllowlist: ['usage'], channels: ['fetch', 'xhr'], label: 'A/B 实验' },
+          { id: 'malware-demo', origins: ['/vendor/malware'], trust: 'observed', dataAllowlist: [], label: '被篡改样本（无数据授权）' },
+          { id: 'evil-collector', origins: ['evil-collector.example', 'exfil.example', 'stats-cdn.example', 'unknown-tracker.example'], trust: 'blocked', dataAllowlist: [], label: '恶意外收服务器' }
+        ],
+        extraAllowedScriptPrefixes: ['/vendor/malware/'],
+        protectedScripts: [] // 由 main.ts 用 integrity.generated 填充
+      };
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🛡️ PayGuard <span>第三方脚本运行时防护演示</span></div>
+      <div class="status" id="guard-status">防护启动中…</div>
+    </header>
+
+    <main class="layout">
+      <!-- 左：结算页 -->
+      <section class="card checkout">
+        <h2>订单结算</h2>
+        <div class="order-line">
+          <span>机械键盘 ×1</span><strong>¥ 699.00</strong>
+        </div>
+        <form id="checkout-form" autocomplete="off">
+          <label>持卡人姓名
+            <input id="cardholder-name" name="name" type="text" placeholder="ZHANG SAN" />
+          </label>
+          <label>邮箱
+            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label>银行卡号
+            <input id="card-number" name="card-number" type="text" inputmode="numeric"
+                   placeholder="4242 4242 4242 4242" maxlength="19" data-pg="card" />
+          </label>
+          <div class="row">
+            <label>有效期
+              <input id="expiry" name="expiry" type="text" placeholder="MM/YY" maxlength="5" />
+            </label>
+            <label>CVV
+              <input id="cvv" name="cvv" type="text" inputmode="numeric" placeholder="123" maxlength="4" />
+            </label>
+          </div>
+          <label>账单地址
+            <input id="address" name="address" type="text" placeholder="北京市朝阳区…" />
+          </label>
+          <button type="submit" class="btn-primary">支付 ¥ 699.00</button>
+          <div id="form-result" class="form-result" hidden></div>
+        </form>
+      </section>
+
+      <!-- 右：攻击场景 + 事件面板 -->
+      <section class="card console">
+        <h2>攻击场景（按需注入样本脚本）</h2>
+        <div class="scenario-grid" id="scenario-grid"></div>
+
+        <div class="panel-head">
+          <h2>实时防护事件</h2>
+          <div class="panel-actions">
+            <label class="filter"><input type="checkbox" id="show-obs" checked /> 显示观察事件</label>
+            <button id="clear-events" class="btn-ghost">清空</button>
+          </div>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="event-list" id="event-list"></div>
+
+        <h2>自动化验收</h2>
+        <div class="test-runner">
+          <button id="run-tests" class="btn-primary">运行全部场景验收</button>
+          <pre id="test-output" class="test-output"></pre>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
+</html>
